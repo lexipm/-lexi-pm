@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
     }
     const payload: WebhookPayload = await req.json()
-    if (!payload.content || payload.content.trim().length < 5) {
+    if (!payload.content || payload.content.trim().length < 2) {
       return NextResponse.json({ status: 'skipped' })
     }
     const analysis = await analyseWithClaude(payload)
@@ -20,19 +20,19 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('brief_items')
       .insert({
-        source: payload.source,
-        channel: payload.channel,
-        thread_id: payload.thread_ts,
-        sender: payload.sender,
+        source: payload.source || 'slack',
+        channel: payload.channel || 'unknown',
+        thread_id: payload.thread_ts || null,
+        sender: payload.sender || 'unknown',
         raw_content: payload.content,
-        summary: analysis.summary,
-        why_it_matters: analysis.why_it_matters,
-        owner: analysis.owner,
-        recommended_action: analysis.recommended_action,
-        classification: analysis.classification,
-        risk_level: analysis.risk_level,
-        confidence: analysis.confidence,
-        vijith_mentioned: analysis.vijith_mentioned,
+        summary: analysis.summary || 'No summary',
+        why_it_matters: analysis.why_it_matters || '',
+        owner: analysis.owner || 'Vijith',
+        recommended_action: analysis.recommended_action || '',
+        classification: analysis.classification || 'FYI',
+        risk_level: analysis.risk_level || 'Low',
+        confidence: analysis.confidence || 'Low',
+        vijith_mentioned: analysis.vijith_mentioned || false,
         draft_response: analysis.draft_response || null,
         draft_approved: false,
         draft_sent: false,
@@ -43,11 +43,11 @@ export async function POST(req: NextRequest) {
     if (error) throw error
     if (analysis.vijith_mentioned && analysis.classification !== 'FYI') {
       await supabase.from('tasks').insert({
-        source: payload.source,
-        description: analysis.summary,
-        addressed_by: payload.sender,
-        channel: payload.channel,
-        thread_id: payload.thread_ts,
+        source: payload.source || 'slack',
+        description: analysis.summary || payload.content,
+        addressed_by: payload.sender || 'unknown',
+        channel: payload.channel || 'unknown',
+        thread_id: payload.thread_ts || null,
         status: 'open',
         context: payload.content,
       })
