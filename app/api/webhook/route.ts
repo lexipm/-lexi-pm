@@ -7,16 +7,26 @@ export async function POST(req: NextRequest) {
   try {
     const secret = req.headers.get('x-webhook-secret')
     if (secret !== process.env.WEBHOOK_SECRET) {
+      console.log('Auth failed')
       return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
     }
+
     const payload: WebhookPayload = await req.json()
+    console.log('Received payload:', JSON.stringify(payload))
+
     if (!payload.content || payload.content.trim().length < 2) {
+      console.log('Skipped - empty content')
       return NextResponse.json({ status: 'skipped' })
     }
+
     const analysis = await analyseWithClaude(payload)
+    console.log('Claude analysis:', JSON.stringify(analysis))
+
     if (analysis.classification === 'Ignore') {
+      console.log('Ignored by Claude')
       return NextResponse.json({ status: 'ignored' })
     }
+
     const { data, error } = await supabase
       .from('brief_items')
       .insert({
@@ -40,7 +50,14 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
-    if (error) throw error
+
+    if (error) {
+      console.log('Supabase error:', JSON.stringify(error))
+      throw error
+    }
+
+    console.log('Saved to Supabase:', data.id)
+
     if (analysis.vijith_mentioned && analysis.classification !== 'FYI') {
       await supabase.from('tasks').insert({
         source: payload.source || 'slack',
@@ -52,6 +69,7 @@ export async function POST(req: NextRequest) {
         context: payload.content,
       })
     }
+
     return NextResponse.json({ status: 'processed', id: data.id })
   } catch (err) {
     console.error('Webhook error:', err)
