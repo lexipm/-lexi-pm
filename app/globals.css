@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --almond-green: #1A6B4A;
+  --almond-green-light: #2A8A60;
+  --almond-green-dim: #E8F4EF;
+  --almond-dark: #0D1F17;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #F0F4F2;
+  color: #0D1F17;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mobile tap highlight */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
